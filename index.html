@@ -442,7 +442,31 @@ select.a-form-input option{background:#1A1A1E}
   .a-barber-grid{grid-template-columns:1fr 1fr}
   .a-grid-2,.a-grid-3{grid-template-columns:1fr}
   .a-form-grid{grid-template-columns:1fr}
+  .a-content{padding:12px;padding-bottom:80px}
+  .a-topbar{padding:10px 14px}
+  .a-page-title{font-size:16px}
+  /* Hide sidebar on mobile, show bottom nav instead */
+  #a-bottom-nav{display:flex !important}
+  table{font-size:11px}
+  thead th{padding:8px 10px;font-size:8px}
+  td{padding:8px 10px}
+  .a-modal{margin:12px;max-width:calc(100vw - 24px)}
+  .a-stats-grid .a-sc-val{font-size:24px}
 }
+/* Admin bottom nav for mobile */
+#a-bottom-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  background:#141416;border-top:1px solid #2A2A32;
+  z-index:200;padding:6px 0 env(safe-area-inset-bottom, 6px);
+}
+.a-bn-items{display:flex;justify-content:space-around;align-items:center}
+.a-bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;cursor:pointer;border-radius:10px;transition:.2s;position:relative;border:none;background:transparent;color:#606078;font-family:'DM Sans',sans-serif;min-width:52px}
+.a-bn-item svg{width:20px;height:20px;stroke-width:1.8;transition:.2s}
+.a-bn-item span{font-size:9px;font-weight:600;letter-spacing:.3px}
+.a-bn-item.active{color:#F0B429}
+.a-bn-item.active svg{stroke:#F0B429}
+.a-bn-badge{position:absolute;top:4px;right:8px;min-width:16px;height:16px;border-radius:8px;background:#F0B429;color:#0D0D0F;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;padding:0 4px}
 </style>
 </head>
 <body>
@@ -953,6 +977,33 @@ select.a-form-input option{background:#1A1A1E}
 
 <div class="toast-wrap"><div class="toast" id="toast"></div></div>
 
+<!-- Admin mobile bottom nav -->
+<div id="a-bottom-nav">
+  <div class="a-bn-items">
+    <button class="a-bn-item active" onclick="aGoViewMob('dashboard',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Bosh</span>
+    </button>
+    <button class="a-bn-item" onclick="aGoViewMob('bookings',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Navbat</span>
+      <div class="a-bn-badge" id="a-mob-badge" style="display:none">0</div>
+    </button>
+    <button class="a-bn-item" onclick="aGoViewMob('barbers',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      <span>Master</span>
+    </button>
+    <button class="a-bn-item" onclick="aGoViewMob('services',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+      <span>Xizmat</span>
+    </button>
+    <button class="a-bn-item" onclick="aGoViewMob('settings',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      <span>Sozlama</span>
+    </button>
+  </div>
+</div>
+
 <!-- ============================================================
      JAVASCRIPT
      ============================================================ -->
@@ -1105,27 +1156,35 @@ function cGoPanel(id, el) {
 
 // HOME
 function cRenderHome() {
-  const barbers = SB_DATA.barbers.length ? SB_DATA.barbers : cFallbackBarbers();
-  const services = SB_DATA.services.length ? SB_DATA.services : cFallbackServices();
+  const barbers = SB_DATA.barbers.filter(b => b.active !== false);
+  const services = SB_DATA.services.filter(s => s.active !== false);
   document.getElementById('c-mcount').textContent = barbers.length;
 
-  document.getElementById('c-home-barbers').innerHTML = barbers.map(b => `
-    <div class="bc" onclick="cQuickSel('${b.name}')">
-      <div class="bc-ava">${b.avatar_url ? `<img src="${b.avatar_url}">` : b.name[0]}</div>
-      <div class="bc-name">${b.name}</div>
-      <div class="bc-role">${b.role}</div>
-      <div class="bc-stars"><b>★</b> ${b.rating}</div>
-    </div>
-  `).join('');
+  if (barbers.length === 0) {
+    document.getElementById('c-home-barbers').innerHTML = '<div class="c-empty-text" style="padding:20px;color:#6A5A50;font-size:12px">Hali masterlar qo\'shilmagan</div>';
+  } else {
+    document.getElementById('c-home-barbers').innerHTML = barbers.map(b => `
+      <div class="bc" onclick="cQuickSel('${b.name}')">
+        <div class="bc-ava">${b.avatar_url ? `<img src="${b.avatar_url}" onerror="this.parentNode.textContent='${b.name[0]}'">` : b.name[0]}</div>
+        <div class="bc-name">${b.name}</div>
+        <div class="bc-role">${b.role}</div>
+        <div class="bc-stars"><b>★</b> ${b.rating}</div>
+      </div>
+    `).join('');
+  }
 
-  document.getElementById('c-home-svcs').innerHTML = services.slice(0, 3).map(s => `
-    <div class="svc-row" onclick="cGoPanel('book',null)">
-      <div class="svc-ico">${s.icon}</div>
-      <div class="svc-info"><div class="svc-nm">${s.name}</div><div class="svc-tm">${s.duration} daqiqa</div></div>
-      <div class="svc-pr">${s.price.toLocaleString()}</div>
-      <span style="font-size:12px;color:#6A5A50;margin-left:4px">›</span>
-    </div>
-  `).join('') + `<div style="text-align:right;margin-top:10px"><span class="sect-more" onclick="cGoPanel('book',null)">Barchasini ko'rish →</span></div>`;
+  if (services.length === 0) {
+    document.getElementById('c-home-svcs').innerHTML = '<div class="c-empty-text" style="padding:20px;color:#6A5A50;font-size:12px">Hali xizmatlar qo\'shilmagan</div>';
+  } else {
+    document.getElementById('c-home-svcs').innerHTML = services.slice(0, 3).map(s => `
+      <div class="svc-row" onclick="cGoPanel('book',null)">
+        <div class="svc-ico">${s.icon}</div>
+        <div class="svc-info"><div class="svc-nm">${s.name}</div><div class="svc-tm">${s.duration} daqiqa</div></div>
+        <div class="svc-pr">${s.price.toLocaleString()}</div>
+        <span style="font-size:12px;color:#6A5A50;margin-left:4px">›</span>
+      </div>
+    `).join('') + `<div style="text-align:right;margin-top:10px"><span class="sect-more" onclick="cGoPanel('book',null)">Barchasini ko'rish →</span></div>`;
+  }
 }
 
 function cQuickSel(name) {
@@ -1136,10 +1195,14 @@ function cQuickSel(name) {
 
 // BOOKING
 function cRenderBkBarbers() {
-  const barbers = SB_DATA.barbers.length ? SB_DATA.barbers : cFallbackBarbers();
+  const barbers = SB_DATA.barbers.filter(b => b.active !== false);
+  if (!barbers.length) {
+    document.getElementById('cs-barbers').innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:#6A5A50;font-size:13px">Hali masterlar qo\'shilmagan</div>';
+    return;
+  }
   document.getElementById('cs-barbers').innerHTML = barbers.map(b => `
     <div class="bk-bc ${cSelB === b.name ? 's' : ''}" onclick="cPickBarber(this,'${b.name}')">
-      <div class="bk-ava">${b.avatar_url ? `<img src="${b.avatar_url}">` : b.name[0]}</div>
+      <div class="bk-ava">${b.avatar_url ? `<img src="${b.avatar_url}" onerror="this.parentNode.textContent='${b.name[0]}'">` : b.name[0]}</div>
       <div class="bk-bname">${b.name}</div>
       <div class="bk-brole">${b.role}</div>
       <div class="bk-bstars"><span>★</span> ${b.rating}</div>
@@ -1156,7 +1219,11 @@ function cPickBarber(el, name) {
 }
 
 function cRenderBkSvcs() {
-  const services = SB_DATA.services.length ? SB_DATA.services : cFallbackServices();
+  const services = SB_DATA.services.filter(s => s.active !== false);
+  if (!services.length) {
+    document.getElementById('cs-svcs').innerHTML = '<div style="padding:30px;text-align:center;color:#6A5A50;font-size:13px">Hali xizmatlar qo\'shilmagan</div>';
+    return;
+  }
   document.getElementById('cs-svcs').innerHTML = services.map(s => {
     const sel = cSelSvcs.some(x => x.id === s.id);
     return `<div class="bk-svc-item ${sel ? 's' : ''}" onclick="cToggleSvc(this,${s.id})">
@@ -1169,7 +1236,7 @@ function cRenderBkSvcs() {
 }
 
 function cToggleSvc(el, id) {
-  const services = SB_DATA.services.length ? SB_DATA.services : cFallbackServices();
+  const services = SB_DATA.services.filter(s => s.active !== false);
   const s = services.find(x => x.id === id);
   if (!s) return;
   el.classList.toggle('s');
@@ -1217,12 +1284,30 @@ function cBuildCal() {
 function cPickDay(el, ds) {
   document.querySelectorAll('.cday').forEach(c => c.classList.remove('sel'));
   el.classList.add('sel'); cSelDate = ds;
-  cBuildSlots();
+  cBuildSlots(); // async, no await needed
 }
-function cBuildSlots() {
-  const cont = document.getElementById('c-time-slots'); cont.innerHTML = '';
+async function cBuildSlots() {
+  const cont = document.getElementById('c-time-slots'); cont.innerHTML = '<div style="padding:20px;text-align:center;color:#6A5A50;font-size:12px">Vaqtlar yuklanmoqda...</div>';
   const times = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30'];
-  const booked = ['10:00','12:30','14:00','16:30']; // TODO: load from Supabase by date+barber
+  
+  let booked = [];
+  try {
+    if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && cSelB && cSelDate) {
+      const { data } = await sb.from('bookings')
+        .select('booking_time')
+        .eq('barber_name', cSelB)
+        .eq('booking_date', cSelDate)
+        .in('status', ['pending', 'done']);
+      booked = (data || []).map(x => x.booking_time);
+    } else {
+      // Local mode: check local state
+      booked = (SB_DATA.allBookings || [])
+        .filter(b => b.barber_name === cSelB && b.booking_date === cSelDate && ['pending','done'].includes(b.status))
+        .map(b => b.booking_time);
+    }
+  } catch(e) { console.error(e); }
+
+  cont.innerHTML = '';
   times.forEach(t => {
     const s = document.createElement('div');
     s.className = 'tslot' + (booked.includes(t) ? ' booked' : '');
@@ -1245,7 +1330,7 @@ function cGoStep(n) {
     if (el) el.style.display = i === n ? 'block' : 'none';
   }
   if (n === 2) cRenderBkSvcs();
-  if (n === 3) { cBuildCal(); if (!cSelDate) cBuildSlots(); }
+  if (n === 3) { cBuildCal(); if (cSelDate) cBuildSlots(); }
   if (n === 4) cFillSum();
   window.scrollTo(0, 0);
 }
@@ -1279,13 +1364,30 @@ async function cConfirmBk() {
 
   try {
     if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
-      const { error } = await sb.from('bookings').insert(bk);
+      const { data, error } = await sb.from('bookings').insert(bk).select().single();
       if (error) throw error;
+      if (data) {
+        // Add to local state so history shows immediately
+        if (!SB_DATA.allBookings) SB_DATA.allBookings = [];
+        SB_DATA.allBookings.unshift(data);
+        bk.id = data.id;
+      }
+    } else {
+      // Local mode: add to state manually
+      if (!SB_DATA.allBookings) SB_DATA.allBookings = [];
+      bk.id = Date.now();
+      bk.created_at = new Date().toISOString();
+      SB_DATA.allBookings.unshift(bk);
     }
     // Notify bot
     await notifyBot(bk);
   } catch(e) {
     console.error(e);
+    // Still add to local state even if DB fails
+    if (!SB_DATA.allBookings) SB_DATA.allBookings = [];
+    bk.id = bk.id || Date.now();
+    bk.created_at = bk.created_at || new Date().toISOString();
+    if (!SB_DATA.allBookings.find(x => x.id === bk.id)) SB_DATA.allBookings.unshift(bk);
   }
 
   if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
@@ -1330,13 +1432,21 @@ async function cLoadHistory() {
   let bookings = [];
   try {
     if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && TG_USER) {
-      const { data } = await sb.from('bookings')
+      const { data, error } = await sb.from('bookings')
         .select('*')
         .eq('telegram_id', String(TG_USER.id))
         .order('created_at', { ascending: false });
+      if (error) throw error;
       bookings = data || [];
+    } else if (TG_USER) {
+      // Use local state
+      bookings = (SB_DATA.allBookings || []).filter(b => String(b.telegram_id) === String(TG_USER.id));
     }
-  } catch(e) { console.error(e); }
+  } catch(e) {
+    console.error(e);
+    // Fallback to local state on error
+    bookings = (SB_DATA.allBookings || []).filter(b => String(b.telegram_id) === String(TG_USER?.id));
+  }
 
   document.getElementById('c-hist-cnt').textContent = bookings.length + ' ta';
 
@@ -1370,31 +1480,17 @@ function cShowNotif() {
 }
 
 function cRenderProfile() {
-  const barbers = SB_DATA.barbers.length ? SB_DATA.barbers : cFallbackBarbers();
-  const services = SB_DATA.services.length ? SB_DATA.services : cFallbackServices();
+  const barbers = SB_DATA.barbers.filter(b => b.active !== false);
+  const services = SB_DATA.services.filter(s => s.active !== false);
   const settings = SB_DATA.settings;
   document.getElementById('c-pr-addr').textContent = settings.salon_addr || 'Termiz sh.';
   document.getElementById('c-pr-mast').textContent = barbers.length + ' ta';
   document.getElementById('c-pr-svcs').textContent = services.length + ' ta';
 }
 
-// Fallback data (when no Supabase)
-function cFallbackBarbers() {
-  return [
-    { id:1, name:'Mirjalol', role:'Top Barber', rating:4.9, avatar_url:'' },
-    { id:2, name:'Sunnat', role:'Premium Barber', rating:4.8, avatar_url:'' },
-    { id:3, name:'Aliboy', role:'Top Barber', rating:4.7, avatar_url:'' }
-  ];
-}
-function cFallbackServices() {
-  return [
-    { id:1, name:'Soch olish', icon:'✂️', price:60000, duration:30 },
-    { id:2, name:'Soqol tekislash', icon:'🪒', price:40000, duration:30 },
-    { id:3, name:'Soch + Soqol', icon:'💈', price:90000, duration:60 },
-    { id:4, name:'Okantovka', icon:'✨', price:45000, duration:15 },
-    { id:5, name:'Kuyov soch turmagi', icon:'👑', price:500000, duration:120 }
-  ];
-}
+// Fallback data (empty - admin will add their own)
+function cFallbackBarbers() { return []; }
+function cFallbackServices() { return []; }
 
 // ============================================================
 // ============================================================
@@ -1414,12 +1510,9 @@ async function aInit() {
 async function aLoadAll() {
   try {
     if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
-      SB_DATA.barbers = cFallbackBarbers().map(b => ({...b, active:true, phone:'', note:'', avatar_url:'', reviews:200}));
-      SB_DATA.services = cFallbackServices().map(s => ({...s, active:true, description:''}));
-      SB_DATA.allBookings = [
-        { id:1, telegram_id:'111', telegram_name:'Ali', barber_name:'Mirjalol', services_text:'Soch olish', total_price:60000, booking_date:'3 May 2026', booking_time:'14:00', phone:'+998901111111', status:'pending', created_at: new Date().toISOString() },
-        { id:2, telegram_id:'222', telegram_name:'Vali', barber_name:'Sunnat', services_text:'Soch olish', total_price:60000, booking_date:'2 May 2026', booking_time:'11:00', phone:'+998902222222', status:'done', created_at: new Date().toISOString() },
-      ];
+      SB_DATA.barbers = [];
+      SB_DATA.services = [];
+      SB_DATA.allBookings = [];
       SB_DATA.settings = { salon_name:'Termiz Barber', salon_addr:'Termiz sh.', salon_phone:'+998 90 000 00 00', work_hours:[] };
       SB_DATA.admins = [{ telegram_id:'8536944196', name:'Bosh Admin', created_at: new Date().toISOString() }];
     } else {
@@ -1465,6 +1558,18 @@ function aGoView(id, el) {
   if (window.innerWidth <= 768) document.getElementById('a-sidebar').classList.remove('mob-open');
 }
 
+function aGoViewMob(id, el) {
+  document.querySelectorAll('.a-bn-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  // Also sync sidebar highlight
+  document.querySelectorAll('.a-sb-item').forEach(i => {
+    const oc = i.getAttribute('onclick') || '';
+    if (oc.includes("'" + id + "'")) i.classList.add('active');
+    else i.classList.remove('active');
+  });
+  aGoView(id, null);
+}
+
 function aTopAction() {
   const id = document.querySelector('.a-view.active').id.replace('av-', '');
   if (id === 'barbers') aOpenBarberModal();
@@ -1492,6 +1597,9 @@ function aDashboard() {
   document.getElementById('a-pending').textContent = pending.length;
   document.getElementById('a-clients').textContent = phones.size;
   document.getElementById('a-nav-badge').textContent = pending.length;
+  // Update mobile badge
+  const mobBadge = document.getElementById('a-mob-badge');
+  if (mobBadge) { mobBadge.textContent = pending.length; mobBadge.style.display = pending.length > 0 ? 'flex' : 'none'; }
 
   // Chart
   const days = ['Du','Se','Ch','Pa','Ju','Sh','Ya'];
