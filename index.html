@@ -289,7 +289,7 @@ body{font-family:'Outfit',sans-serif}
 /* ADMIN APP */
 #admin-app{display:none;background:#0D0D0F;min-height:100vh;color:#E8E8F0}
 #admin-app.show{display:flex}
-.a-sidebar{width:220px;min-height:100vh;background:#141416;border-right:1px solid #2A2A32;display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100;transition:transform .3s}
+.a-sidebar{width:220px;min-height:100vh;background:#141416;border-right:1px solid #2A2A32;display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100}
 .a-sb-brand{padding:24px 20px;border-bottom:1px solid #2A2A32}
 .a-sb-logo{display:flex;align-items:center;gap:10px}
 .a-sb-icon{width:36px;height:36px;background:#F0B429;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#0D0D0F;flex-shrink:0}
@@ -321,9 +321,8 @@ body{font-family:'Outfit',sans-serif}
 .a-btn-primary{background:#F0B429;color:#0D0D0F;font-weight:700}
 .a-btn-primary:hover{background:#FFD166;transform:translateY(-1px)}
 .a-content{flex:1;padding:24px}
-.a-view{display:none;animation:fadeUp .3s ease}
+.a-view{display:none}
 .a-view.active{display:block}
-@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
 /* ADMIN STATS */
 .a-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
@@ -452,8 +451,6 @@ select.a-form-input option{background:#1A1A1E}
 
 /* ADMIN MOBILE */
 #a-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#141416;border-top:1px solid #2A2A32;z-index:200;padding:6px 0 env(safe-area-inset-bottom,6px)}
-.a-sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:101;opacity:0;pointer-events:none;transition:opacity .3s}
-.a-sidebar-overlay.show{opacity:1;pointer-events:all;background:rgba(0,0,0,0.5)}
 .a-bn-items{display:flex;justify-content:space-around;align-items:center}
 .a-bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;cursor:pointer;border-radius:10px;transition:.2s;position:relative;border:none;background:transparent;color:#606078;font-family:'DM Sans',sans-serif;min-width:52px}
 .a-bn-item svg{width:20px;height:20px;stroke-width:1.8;transition:.2s}
@@ -463,8 +460,7 @@ select.a-form-input option{background:#1A1A1E}
 .a-bn-badge{position:absolute;top:4px;right:8px;min-width:16px;height:16px;border-radius:8px;background:#F0B429;color:#0D0D0F;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;padding:0 4px}
 
 @media(max-width:768px){
-  .a-sidebar{transform:translateX(-100%);background:rgba(20,20,22,0.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-  .a-sidebar.mob-open{transform:translateX(0)}
+  .a-sidebar{width:200px;background:rgba(20,20,22,0.98)}
   .a-main{margin-left:0}
   .a-stats-grid{grid-template-columns:1fr}
   .a-barber-grid{grid-template-columns:1fr 1fr}
@@ -806,8 +802,7 @@ select.a-form-input option{background:#1A1A1E}
       </div>
     </div>
   </div>
-  <div class="a-sidebar-overlay" onclick="aToggleSidebar()"></div>
-
+  
   <div class="a-main">
     <div class="a-topbar">
       <div class="a-topbar-left">
@@ -1738,11 +1733,6 @@ function aGoView(id, el) {
   if (id === 'barbers')  { btn.style.display = 'flex'; btn.textContent = "+ Master qo'shish"; }
   else if (id === 'services') { btn.style.display = 'flex'; btn.textContent = "+ Xizmat qo'shish"; }
   else btn.style.display = 'none';
-
-  if (window.innerWidth <= 768) {
-    document.getElementById('a-sidebar').classList.remove('mob-open');
-    document.querySelector('.a-sidebar-overlay').classList.remove('show');
-  }
 }
 
 function aGoViewMob(id, el) {
@@ -1754,22 +1744,12 @@ function aGoViewMob(id, el) {
     else i.classList.remove('active');
   });
   aGoView(id, null);
-  // Force close sidebar on mobile
-  if (window.innerWidth <= 768) {
-    document.getElementById('a-sidebar').classList.remove('mob-open');
-    document.querySelector('.a-sidebar-overlay').classList.remove('show');
-  }
 }
 
 function aTopAction() {
   const id = document.querySelector('.a-view.active')?.id.replace('av-', '');
   if (id === 'barbers')  aOpenBarberModal();
   if (id === 'services') aOpenServiceModal();
-}
-
-function aToggleSidebar() {
-  document.getElementById('a-sidebar').classList.toggle('mob-open');
-  document.querySelector('.a-sidebar-overlay').classList.toggle('show');
 }
 
 function aCheckMobile() {
