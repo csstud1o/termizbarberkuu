@@ -1408,8 +1408,8 @@ function cRenderBkSvcs() {
   }
 
   cont.innerHTML = services.map(s => {
-    const sel = cSelSvcs.some(x => x.id === s.id);
-    return `<div class="bk-svc-item ${sel ? 's' : ''}" onclick="cToggleSvc(this,${s.id})">
+    const sel = cSelSvcs.some(x => String(x.id) === String(s.id));
+    return `<div class="bk-svc-item ${sel ? 's' : ''}" onclick="cToggleSvc(this,'${s.id}')">
       <div class="bk-svc-ico">${s.icon}</div>
       <div class="bk-svc-info">
         <div class="bk-svc-nm">${s.name}</div>
@@ -1424,11 +1424,11 @@ function cRenderBkSvcs() {
 }
 
 function cToggleSvc(el, id) {
-  const s = SB_DATA.services.find(x => x.id === id);
+  const s = SB_DATA.services.find(x => String(x.id) === String(id));
   if (!s) return;
   el.classList.toggle('s');
   const chk = el.querySelector('.bk-svc-chk');
-  const idx = cSelSvcs.findIndex(x => x.id === id);
+  const idx = cSelSvcs.findIndex(x => String(x.id) === String(id));
   if (idx >= 0) {
     cSelSvcs.splice(idx, 1);
     cSelTotal -= s.price;
@@ -1668,6 +1668,7 @@ function cRenderProfile() {
 function setBtnDisabled(id, disabled) {
   const btn = document.getElementById(id);
   if (!btn) return;
+  btn.disabled = disabled;
   if (disabled) btn.classList.add('disabled');
   else btn.classList.remove('disabled');
 }
