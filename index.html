@@ -452,8 +452,8 @@ select.a-form-input option{background:#1A1A1E}
 
 /* ADMIN MOBILE */
 #a-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#141416;border-top:1px solid #2A2A32;z-index:200;padding:6px 0 env(safe-area-inset-bottom,6px)}
-.a-sidebar-overlay{position:fixed;inset:0;background:#000;z-index:99;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(2px)}
-.a-sidebar-overlay.show{opacity:0.5;pointer-events:all}
+.a-sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:101;opacity:0;pointer-events:none;transition:opacity .3s}
+.a-sidebar-overlay.show{opacity:1;pointer-events:all;background:rgba(0,0,0,0.5)}
 .a-bn-items{display:flex;justify-content:space-around;align-items:center}
 .a-bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;cursor:pointer;border-radius:10px;transition:.2s;position:relative;border:none;background:transparent;color:#606078;font-family:'DM Sans',sans-serif;min-width:52px}
 .a-bn-item svg{width:20px;height:20px;stroke-width:1.8;transition:.2s}
