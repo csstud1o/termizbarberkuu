@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Termiz Barber - Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080608;--bg2:#0F0B10;--bg3:#150F18;--bg4:#1D1622;
+  --accent:#F0A842;--accent2:#D4802A;--accentfade:rgba(240,168,66,0.1);
+  --text:#EDE8E0;--text2:#A89888;--text3:#6A5A50;
+  --border:#1D1622;--border2:#261E2E;
+  --green:#06D6A0;--red:#EF4565;--blue:#4CC9F0;
+}
+html,body{min-height:100vh;overflow-x:hidden}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text)}
+#app{min-height:100vh}
+
+/* LOADING */
+.loading-screen{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.loading-spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--text3);font-size:13px}
+
+/* LOGIN */
+.login-screen{height:100vh;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.login-screen.show{display:flex}
+.login-logo{width:70px;height:70px;background:linear-gradient(135deg,#9A5A14,#D4802A);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:20px}
+.login-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:var(--accent);margin-bottom:8px}
+.login-sub{font-size:13px;color:var(--text3);margin-bottom:24px}
+.login-btn{background:var(--accent);color:var(--bg);padding:14px 32px;border-radius:12px;font-weight:600;font-size:14px;border:none;cursor:pointer;width:100%;max-width:280px}
+.login-error{color:var(--red);font-size:12px;margin-top:16px;display:none}
+
+/* MAIN */
+.main-screen{display:none;height:100vh;flex-direction:column}
+.main-screen.show{display:flex}
+.header{background:var(--bg2);padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.header-left{display:flex;align-items:center;gap:10px}
+.header-logo{width:32px;height:32px;background:linear-gradient(135deg,#9A5A14,#D4802A);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.header-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--accent)}
+.header-right{display:flex;align-items:center;gap:8px}
+.header-user{font-size:12px;color:var(--text2)}
+.logout-btn{background:transparent;border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer}
+
+/* TABS */
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;padding:0 8px}
+.tab{padding:12px 10px;text-align:center;font-size:11px;color:var(--text3);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;font-weight:500}
+.tab.active{color:var(--accent);border-color:var(--accent)}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding-bottom:70px}
+
+/* DASHBOARD */
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:16px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 12px}
+.stat-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.stat-icon{font-size:16px}
+.stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px}
+.stat-value{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--accent)}
+.stat-sub{font-size:10px;color:var(--text2);margin-top:2px}
+
+/* RECENT */
+.recent-section{padding:0 16px 16px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-title{font-size:13px;font-weight:600;color:var(--text2)}
+.section-badge{background:var(--accent);color:var(--bg);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+
+/* LIST ITEMS */
+.list{padding:0 16px}
+.list-item{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.list-item-avatar{width:40px;height:40px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden}
+.list-item-avatar img{width:100%;height:100%;object-fit:cover}
+.list-item-info{flex:1;min-width:0}
+.list-item-title{font-weight:600;font-size:13px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-item-sub{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-item-meta{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:2px}
+.list-item-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+
+/* STATUS */
+.status{padding:4px 8px;border-radius:6px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.status-pending{background:rgba(76,201,240,0.15);color:var(--blue)}
+.status-confirmed{background:rgba(6,214,160,0.15);color:var(--green)}
+.status-completed{background:rgba(240,180,41,0.15);color:var(--accent)}
+.status-cancelled{background:rgba(239,69,101,0.15);color:var(--red)}
+
+/* BUTTONS */
+.btn{padding:8px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;font-family:inherit}
+.btn-primary{background:var(--accent);color:var(--bg)}
+.btn-success{background:var(--green);color:var(--bg)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-secondary{background:var(--bg3);color:var(--text2)}
+.btn-sm{padding:6px 10px;font-size:11px}
+.btn-icon{padding:6px 8px;font-size:12px}
+
+/* ACTION BUTTONS */
+.action-btns{display:flex;gap:4px}
+.action-btns .btn{opacity:0.8}
+.action-btns .btn:hover{opacity:1}
+
+/* SERVICE ITEM */
+.service-item{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px}
+.service-header{display:flex;align-items:center;justify-content:space-between}
+.service-info{display:flex;align-items:center;gap:10px}
+.service-icon{width:36px;height:36px;background:var(--bg3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.service-name{font-weight:500;font-size:13px}
+.service-meta{font-size:10px;color:var(--text3);margin-top:2px}
+.service-right{text-align:right}
+.service-price{font-family:'DM Mono',monospace;font-size:14px;color:var(--accent);font-weight:600}
+.service-actions{margin-top:8px;display:flex;justify-content:flex-end;gap:6px}
+
+/* SWITCH */
+.switch{width:36px;height:20px;background:var(--bg3);border-radius:10px;position:relative;cursor:pointer;flex-shrink:0}
+.switch.active{background:var(--accent)}
+.switch::after{content:'';position:absolute;width:16px;height:16px;background:var(--text);border-radius:50%;top:2px;left:2px;transition:0.2s}
+.switch.active::after{left:18px}
+
+/* ADD BUTTON */
+.fab{position:fixed;bottom:70px;right:16px;width:52px;height:52px;background:var(--accent);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--bg);box-shadow:0 4px 16px rgba(240,168,66,0.3);z-index:40;cursor:pointer;border:none}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;display:none;align-items:center;justify-content:center;padding:16px}
+.modal.show{display:flex}
+.modal-content{background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto}
+.modal-header{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-weight:600;font-size:15px}
+.modal-close{font-size:24px;color:var(--text2);cursor:pointer;line-height:1}
+.modal-body{padding:16px}
+.modal-footer{padding:16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+/* FORM */
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500}
+.form-input{width:100%;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit}
+.form-input:focus{outline:none;border-color:var(--accent)}
+.form-input::placeholder{color:var(--text3)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+textarea.form-input{resize:none;min-height:60px}
+
+/* SETTINGS */
+.settings-section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin:16px;overflow:hidden}
+.settings-header{padding:12px 14px;border-bottom:1px solid var(--border);font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px}
+.settings-row{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.settings-row:last-child{border:none}
+.settings-label{font-size:12px;color:var(--text2)}
+.settings-input{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;width:160px;text-align:right}
+.settings-input:focus{outline:none;border-color:var(--accent)}
+select.settings-input{width:160px}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-icon{font-size:36px;margin-bottom:10px;opacity:0.5}
+.empty-text{font-size:12px}
+
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bg4);border:1px solid var(--border);padding:12px 20px;border-radius:10px;font-size:12px;z-index:200;display:none;align-items:center;gap:8px;animation:slideUp 0.3s ease}
+.toast.show{display:flex}
+.toast.success{border-color:var(--green)}
+.toast.error{border-color:var(--red)}
+@keyframes slideUp{from{transform:translateX(-50%) translateY(20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+
+/* REFRESH */
+.refresh-bar{background:var(--bg2);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.refresh-text{font-size:11px;color:var(--text3)}
+.refresh-btn{background:transparent;border:none;color:var(--accent);font-size:11px;cursor:pointer}
+
+/* RESPONSIVE */
+@media(min-width:500px){
+  .fab{right:calc(50% - 215px)}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- LOADING -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Yuklanmoqda...</div>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-logo">✂️</div>
+    <div class="login-title">Admin Panel</div>
+    <div class="login-sub">Termiz Barber</div>
+    <button class="login-btn" id="login-btn">Telegram orqali kirish</button>
+    <div id="login-error" class="login-error">⚠️ Siz admin emassiz</div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main-screen" class="main-screen">
+    <div class="header">
+      <div class="header-left">
+        <div class="header-logo">✂️</div>
+        <div class="header-title">Admin</div>
+      </div>
+      <div class="header-right">
+        <span class="header-user" id="header-user"></span>
+        <button class="logout-btn" onclick="logout()">Chiqish</button>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-tab="dashboard">📊 Dashboard</div>
+      <div class="tab" data-tab="bookings">📅 Bronlar</div>
+      <div class="tab" data-tab="barbers">✂️ Masterlar</div>
+      <div class="tab" data-tab="services">💇 Xizmatlar</div>
+      <div class="tab" data-tab="settings">⚙️ Sozlamalar</div>
+    </div>
+
+    <div class="content" id="content">
+      <!-- DASHBOARD -->
+      <div id="panel-dashboard" class="panel">
+        <div class="refresh-bar">
+          <span class="refresh-text">Oxirgi yangilanish: <span id="last-update">-</span></span>
+          <button class="refresh-btn" onclick="refreshAll()">🔄 Yangilash</button>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-label">Bugungi bron</span>
+              <span class="stat-icon">📅</span>
+            </div>
+            <div class="stat-value" id="stat-today">0</div>
+            <div class="stat-sub" id="stat-today-revenue">0 so'm</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-label">Haftalik bron</span>
+              <span class="stat-icon">📆</span>
+            </div>
+            <div class="stat-value" id="stat-week">0</div>
+            <div class="stat-sub" id="stat-week-revenue">0 so'm</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-label">Jami mijozlar</span>
+              <span class="stat-icon">👥</span>
+            </div>
+            <div class="stat-value" id="stat-clients">0</div>
+            <div class="stat-sub" id="stat-new">+0 bu oy</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-label">Masterlar</span>
+              <span class="stat-icon">✂️</span>
+            </div>
+            <div class="stat-value" id="stat-barbers">0</div>
+            <div class="stat-sub" id="stat-barbers-active">0 faol</div>
+          </div>
+        </div>
+        <div class="recent-section">
+          <div class="section-header">
+            <span class="section-title">So'nggi bronlar</span>
+          </div>
+          <div class="list" id="recent-bookings"></div>
+        </div>
+      </div>
+
+      <!-- BOOKINGS -->
+      <div id="panel-bookings" class="panel" style="display:none">
+        <div class="refresh-bar">
+          <span class="refresh-text">Jami: <span id="bookings-count">0</span> ta bron</span>
+          <button class="refresh-btn" onclick="loadBookings()">🔄</button>
+        </div>
+        <div class="list" id="bookings-list"></div>
+      </div>
+
+      <!-- BARBERS -->
+      <div id="panel-barbers" class="panel" style="display:none">
+        <div class="list" id="barbers-list"></div>
+      </div>
+
+      <!-- SERVICES -->
+      <div id="panel-services" class="panel" style="display:none">
+        <div class="list" id="services-list"></div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="panel-settings" class="panel" style="display:none">
+        <div class="settings-section">
+          <div class="settings-header">🏪 Do'kon ma'lumotlari</div>
+          <div class="settings-row">
+            <span class="settings-label">Do'kon nomi</span>
+            <input class="settings-input" id="shop_name" placeholder="Termiz Barber">
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Manzil</span>
+            <input class="settings-input" id="address" placeholder="Manzil">
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Telefon</span>
+            <input class="settings-input" id="phone" placeholder="+998...">
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Dam olish</span>
+            <select class="settings-input" id="rest_day">
+              <option value="0">Yakshanba</option>
+              <option value="1">Dushanba</option>
+              <option value="2">Seshanba</option>
+              <option value="3">Chorshanba</option>
+              <option value="4">Payshanba</option>
+              <option value="5">Juma</option>
+              <option value="6">Shanba</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-header">👥 Adminlar</div>
+          <div id="admins-list"></div>
+          <button class="btn btn-secondary" style="width:calc(100% - 28px);margin:12px 14px" onclick="openAddAdmin()">+ Yangi admin</button>
+        </div>
+        <button class="btn btn-primary" style="width:calc(100% - 32px);margin:16px" onclick="saveAllSettings()">💾 Saqlash</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title"></span>
+      <span class="modal-close" onclick="closeModal()">&times;</span>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- FAB for add -->
+<button class="fab" id="fab" style="display:none" onclick="handleFabClick()">+</button>
+
+<!-- TOAST -->
+<div id="toast" class="toast">
+  <span id="toast-icon">✅</span>
+  <span id="toast-message"></span>
+</div>
+
+<script>
+// ============ CONFIG ============
+const CONFIG = {
+  supabaseUrl: 'https://vezdgqyndfdafwcdrgfz.supabase.co',
+  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlemRncXluZGZkYWZ3Y2RyZ2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDgwMjYsImV4cCI6MjA5MzQ4NDAyNn0.k7XfxYOjHbdIVfpzJLhzvIcDUNRWHH-pLNjFIl5X22o'
+};
+
+const { createClient } = supabase;
+const sb = createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
+
+let currentUser = null;
+let currentTab = 'dashboard';
+
+// ============ INIT ============
+document.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+  // Tab click handler
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+  });
+
+  // Login button
+  document.getElementById('login-btn').addEventListener('click', loginWithTelegram);
+
+  // Check Telegram auth
+  if (window.Telegram?.WebApp) {
+    window.Telegram.WebApp.ready();
+    const user = window.Telegram.WebApp.initDataUnsafe?.user;
+    if (user) {
+      await checkAdmin(user);
+    } else {
+      showLogin();
+    }
+  } else {
+    // For testing without Telegram
+    showLogin();
+  }
+
+  // Subscribe to realtime updates
+  subscribeToRealtime();
+}
+
+function showLogin() {
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('login-screen').classList.add('show');
+}
+
+async function checkAdmin(user) {
+  try {
+    const { data } = await sb.from('admins').select('*').eq('telegram_id', user.id.toString()).single();
+    if (data) {
+      currentUser = user;
+      showMain(user);
+    } else {
+      showLogin();
+      document.getElementById('login-error').style.display = 'block';
+    }
+  } catch (e) {
+    showLogin();
+  }
+}
+
+function loginWithTelegram() {
+  if (window.Telegram?.WebApp) {
+    window.Telegram.WebApp.close();
+  }
+  showToast('❗ Iltimos, Telegram orqali oching', 'error');
+}
+
+function showMain(user) {
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('login-screen').classList.remove('show');
+  document.getElementById('main-screen').classList.add('show');
+  document.getElementById('header-user').textContent = `@${user.username || user.first_name}`;
+
+  loadDashboard();
+}
+
+function logout() {
+  location.reload();
+}
+
+// ============ TABS ============
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+  document.getElementById(`panel-${tab}`).style.display = 'block';
+
+  // Show/hide FAB
+  document.getElementById('fab').style.display = (tab === 'barbers' || tab === 'services') ? 'flex' : 'none';
+
+  // Load data
+  if (tab === 'dashboard') loadDashboard();
+  if (tab === 'bookings') loadBookings();
+  if (tab === 'barbers') loadBarbers();
+  if (tab === 'services') loadServices();
+  if (tab === 'settings') loadSettings();
+}
+
+function handleFabClick() {
+  if (currentTab === 'barbers') openAddBarber();
+  if (currentTab === 'services') openAddService();
+}
+
+// ============ DASHBOARD ============
+async function loadDashboard() {
+  const today = new Date().toISOString().split('T')[0];
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  try {
+    // Get all needed data
+    const [bookingsRes, barbersRes] = await Promise.all([
+      sb.from('bookings').select('*').gte('date', weekAgo),
+      sb.from('barbers').select('*')
+    ]);
+
+    const bookings = bookingsRes.data || [];
+    const barbers = barbersRes.data || [];
+
+    // Today's stats
+    const todayBookings = bookings.filter(b => b.date === today);
+    const todayRevenue = todayBookings.reduce((sum, b) => sum + (b.total_price || 0), 0);
+
+    // Week stats
+    const weekBookings = bookings;
+    const weekRevenue = weekBookings.reduce((sum, b) => sum + (b.total_price || 0), 0);
+
+    // Clients
+    const allClients = [...new Set(bookings.map(b => b.telegram_id))].length;
+    const monthClients = [...new Set(bookings.filter(b => b.date >= monthAgo).map(b => b.telegram_id))].length;
+
+    // Active barbers
+    const activeBarbers = barbers.filter(b => b.active).length;
+
+    // Update UI
+    document.getElementById('stat-today').textContent = todayBookings.length;
+    document.getElementById('stat-today-revenue').textContent = formatPrice(todayRevenue);
+    document.getElementById('stat-week').textContent = weekBookings.length;
+    document.getElementById('stat-week-revenue').textContent = formatPrice(weekRevenue);
+    document.getElementById('stat-clients').textContent = allClients;
+    document.getElementById('stat-new').textContent = `+${monthClients} bu oy`;
+    document.getElementById('stat-barbers').textContent = barbers.length;
+    document.getElementById('stat-barbers-active').textContent = `${activeBarbers} faol`;
+    document.getElementById('last-update').textContent = new Date().toLocaleTimeString('uz-UZ');
+
+    loadRecentBookings();
+  } catch (e) {
+    console.error('Dashboard error:', e);
+    showToast('Xatolik yuz berdi', 'error');
+  }
+}
+
+function formatPrice(price) {
+  return price.toLocaleString() + ' so\'m';
+}
+
+async function loadRecentBookings() {
+  const { data: bookings } = await sb.from('bookings').select('*').order('created_at', { ascending: false }).limit(5);
+  const { data: barbers } = await sb.from('barbers').select('id,name');
+  const { data: services } = await sb.from('services').select('id,name');
+
+  const container = document.getElementById('recent-bookings');
+  if (!bookings?.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Bronlar yo\'q</div></div>';
+    return;
+  }
+
+  container.innerHTML = bookings.map(b => {
+    const barber = barbers?.find(x => x.id === b.barber_id);
+    const serviceNames = b.services?.map(sid => services?.find(s => s.id === sid)?.name).filter(Boolean).join(', ') || 'Xizmatlar';
+    return `
+      <div class="list-item">
+        <div class="list-item-info">
+          <div class="list-item-title">${barber?.name || 'Noma\'lum'}</div>
+          <div class="list-item-sub">${serviceNames}</div>
+          <div class="list-item-meta">${formatDate(b.date)} ${b.time}</div>
+        </div>
+        <span class="status status-${b.status}">${b.status}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function formatDate(dateStr) {
+  const date = new Date(dateStr);
+  const today = new Date();
+  if (date.toDateString() === today.toDateString()) return 'Bugun';
+  return date.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short' });
+}
+
+// ============ BOOKINGS ============
+async function loadBookings() {
+  const { data: bookings } = await sb.from('bookings').select('*').order('created_at', { ascending: false });
+  const { data: barbers } = await sb.from('barbers').select('id,name');
+  const { data: services } = await sb.from('services').select('id,name');
+
+  document.getElementById('bookings-count').textContent = bookings?.length || 0;
+
+  const container = document.getElementById('bookings-list');
+  if (!bookings?.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Bronlar yo\'q</div></div>';
+    return;
+  }
+
+  container.innerHTML = bookings.map(b => {
+    const barber = barbers?.find(x => x.id === b.barber_id);
+    const serviceNames = b.services?.map(sid => services?.find(s => s.id === sid)?.name).filter(Boolean).join(', ') || '';
+    const canConfirm = b.status === 'pending';
+    const canComplete = b.status === 'confirmed';
+
+    return `
+      <div class="list-item">
+        <div class="list-item-avatar">${barber?.name?.charAt(0) || '?'}</div>
+        <div class="list-item-info">
+          <div class="list-item-title">${barber?.name || 'Noma\'lum'}</div>
+          <div class="list-item-sub">${serviceNames}</div>
+          <div class="list-item-meta">${formatDate(b.date)} ${b.time} • ${formatPrice(b.total_price || 0)}</div>
+        </div>
+        <div class="list-item-right">
+          <span class="status status-${b.status}">${b.status}</span>
+          <div class="action-btns">
+            ${canConfirm ? `<button class="btn btn-sm btn-success" onclick="updateBooking('${b.id}','confirmed')">✓</button>` : ''}
+            ${canComplete ? `<button class="btn btn-sm btn-primary" onclick="updateBooking('${b.id}','completed')">✓✓</button>` : ''}
+            <button class="btn btn-sm btn-danger" onclick="deleteBooking('${b.id}')">✕</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function updateBooking(id, status) {
+  try {
+    await sb.from('bookings').update({ status }).eq('id', id);
+    showToast(status === 'confirmed' ? 'Bron tasdiqlandi ✅' : 'Bron yakunlandi ✅', 'success');
+    loadBookings();
+    refreshAll();
+  } catch (e) {
+    showToast('Xatolik: ' + e.message, 'error');
+  }
+}
+
+async function deleteBooking(id) {
+  if (confirm('Bronni o\'chirish?')) {
+    try {
+      await sb.from('bookings').delete().eq('id', id);
+      showToast('Bron o\'chirildi', 'success');
+      loadBookings();
+      refreshAll();
+    } catch (e) {
+      showToast('Xatolik: ' + e.message, 'error');
+    }
+  }
+}
+
+// ============ BARBERS ============
+async function loadBarbers() {
+  const { data: barbers } = await sb.from('barbers').select('*').order('created_at', { ascending: false });
+
+  const container = document.getElementById('barbers-list');
+  if (!barbers?.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">✂️</div><div class="empty-text">Masterlar yo\'q</div></div>';
+    return;
+  }
+
+  container.innerHTML = barbers.map(b => `
+    <div class="list-item">
+      <div class="list-item-avatar">${b.avatar_url ? `<img src="${b.avatar_url}" alt="">` : '👤'}</div>
+      <div class="list-item-info">
+        <div class="list-item-title">${b.name}</div>
+        <div class="list-item-sub">${b.role || 'Barber'} • ⭐ ${b.rating?.toFixed(1) || '4.5'} (${b.reviews || 0})</div>
+        ${b.phone ? `<div class="list-item-meta">📞 ${b.phone}</div>` : ''}
+      </div>
+      <div class="list-item-right">
+        <div class="switch ${b.active ? 'active' : ''}" onclick="toggleBarber('${b.id}', ${!b.active})"></div>
+        <div class="action-btns">
+          <button class="btn btn-sm btn-secondary btn-icon" onclick="editBarber('${b.id}')">✏️</button>
+          <button class="btn btn-sm btn-danger btn-icon" onclick="deleteBarber('${b.id}')">🗑️</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function toggleBarber(id, active) {
+  try {
+    await sb.from('barbers').update({ active }).eq('id', id);
+    loadBarbers();
+  } catch (e) {
+    showToast('Xatolik: ' + e.message, 'error');
+  }
+}
+
+function openAddBarber() {
+  openModal('Yangi master qo\'shish', `
+    <div class="form-group">
+      <label class="form-label">Ism *</label>
+      <input type="text" class="form-input" id="barber-name" placeholder="Masalan: Azamat">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Lavozim</label>
+      <input type="text" class="form-input" id="barber-role" placeholder="Barber" value="Barber">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Telefon</label>
+        <input type="tel" class="form-input" id="barber-phone" placeholder="+998901234567">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reyting</label>
+        <input type="number" class="form-input" id="barber-rating" value="4.5" step="0.1" min="0" max="5">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Rasm URL</label>
+      <input type="url" class="form-input" id="barber-avatar" placeholder="https://...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Izoh</label>
+      <textarea class="form-input" id="barber-note" placeholder="Qisqa tavsif..."></textarea>
+    </div>
+  `, `
+    <button class="btn btn-secondary" onclick="closeModal()">Bekor</button>
+    <button class="btn btn-primary" onclick="saveBarber()">Saqlash</button>
+  `);
+}
+
+async function saveBarber() {
+  const name = document.getElementById('barber-name').value.trim();
+  if (!name) return showToast('Iltimos, ismni kiriting!', 'error');
+
+  try {
+    const barber = {
+      name,
+      role: document.getElementById('barber-role').value || 'Barber',
+      phone: document.getElementById('barber-phone').value,
+      avatar_url: document.getElementById('barber-avatar').value,
+      note: document.getElementById('barber-note').value,
+      rating: parseFloat(document.getElementById('barber-rating').value) || 4.5,
+      reviews: 0,
+      active: true
+    };
+
+    await sb.from('barbers').insert([barber]);
+    closeModal();
+    loadBarbers();
+    showToast('Master qo\'shildi ✅', 'success');
+  } catch (e) {
+    showToast('Xatolik: ' + e.message, 'error');
+  }
+}
+
+async function editBarber(id) {
+  const { data: barber } = await sb.from('barbers').select('*').eq('id', id).single();
+
+  openModal('Masterni tahrirlash', `
+    <div class="form-group">
+      <label class="form-label">Ism *</label>
+      <input type="text" class="form-input" id="barber-name" value="${barber.name}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Lavozim</label>
+      <input type="text" class="form-input" id="barber-role" value="${barber.role || 'Barber'}">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Telefon</label>
+        <input type="tel" class="form-input" id="barber-phone" value="${barber.phone || ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reyting</label>
+        <input type="number" class="form-input" id="barber-rating" value="${barber.rating || 4.5}" step="0.1" min="0" max="5">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Rasm URL</label>
+      <input type="url" class="form-input" id="barber-avatar" value="${barber.avatar_url || ''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Izoh</label>
+      <textarea class="form-input" id="barber-note">${barber.note || ''}</textarea>
+    </div>
+  `, `
+    <button class="btn btn-secondary" onclick="closeModal()">Bekor</button>
+    <button class="btn btn-primary" onclick="updateBarber('${id}')">Saqlash</button>
+  `);
+}
+
+async function updateBarber(id) {
+  const name = document.getElementById('barber-name').value.trim();
+  if (!name) return showToast('Iltimos, ismni kiriting!', 'error');
+
+  try {
+    const barber = {
+      name,
+      role: document.getElementById('barber-role').value,
+      phone: document.getElementById('barber-phone').value,
+      avatar_url: document.getElementById('barber-avatar').value,
+      note: document.getElementById('barber-note').value,
+      rating: parseFloat(document.getElementById('barber-rating').value) || 4.5
+    };
+
+    await sb.from('barbers').update(barber).eq('id', id);
+    closeModal();
+    loadBarbers();
+    showToast('Master yangilandi ✅', 'success');
+  } catch (e) {
+    showToast('Xatolik: ' + e.message, 'error');
+  }
+}
+
+async function deleteBarber(id) {
+  if (confirm('Haqiqatan ham ushbu masterni o\'chirish?')) {
+    try {
+      await sb.from('barbers').delete().eq('id', id);
+      loadBarbers();
+      showToast('Master o\'chirildi', 'success');
+    } catch (e) {
+      showToast('Xatolik: ' + e.message, 'error');
+    }
+  }
+}
+
+// ============ SERVICES ============
+async function loadServices() {
+  const { data: services } = await sb.from('services').select('*').order('created_at', { ascending: false });
+
+  const container = document.getElementById('services-list');
+  if (!services?.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">💇</div><div class="empty-text">Xizmatlar yo\'q</div></div>';
+    return;
+  }
+
+  container.innerHTML = services.map(s => `
+    <div class="service-item">
+      <div class="service-header">
+        <div class="service-info">
+          <div class="service-icon">${s.icon || '✂️'}</div>
+          <div>
+            <div class="service-name">${s.name}</div>
+            <div class="service-meta">${s.duration || 30} daq${s.description ? ' • ' + s.description : ''}</div>
+          </div>
+        </div>
+        <div class="service-right">
+          <div class="service-price">${formatPrice(s.price || 0)}</div>
+          <div class="switch ${s.active ? 'active' : ''}" onclick="toggleService('${s.id}', ${!s.active})"></div>
+        </div>
+      </div>
+      <div class="service-actions">
+        <button class="btn btn-sm btn-secondary" onclick="editService('${s.id}')">✏️ Tahrirlash</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteService('${s.id}')">🗑️ O\'chirish</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function toggleService(id, active) {
+  try {
+    await sb.from('services').update({ active }).eq('id', id);
+    loadServices();
+  } catch (e) {
+    showToast('Xatolik: ' + e.message, 'error');
+  }
+}
+
+function openAddService() {
+  openModal('Yangi xizmat qo\'shish', `
+    <div class="form-group">
+      <label class="form-label">Xizmat nomi *</label>
+      <input type="text" class="form-input" id="service-name" placeholder="Masalan: Soch kesish">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Narx (so'm) *</label>
+        <input type="number" class="form-input" id="service-price" placeholder="50000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Davomiylik (daq)</label>
+        <input type="number" class="form-input" id="service-duration" value="30">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Icon</label>
+      <input type="text" class="form-input" id="service-icon" value="✂️" placeholder="✂️">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tavsif</label>
+      <textarea class="form-input" id="service-description" placeholder="Qisqa ma'lumot..."></textarea>
+    </div>
+  `, `
+    <button class="btn btn-secondary" onclick="closeModal()">Bekor</button>
+    <button class="btn btn-primary" onclick="saveService()">Saqlash</button>
+  `);
+}
+
+async function saveService() {
+  const name = document.getElementById('service-name').value.trim();
+  const price = parseInt(document.getElementById('service-price').value);
+
+  if (!name) return showToast('Iltimos, xizmat nomini kiriting!', 'error');
+  if (!price || price <= 0) return showToast('Iltimos, to\'g\'ri narx kiriting!', 'error');
+
+  try {
+    const service = {
+      name,
+      price,
+      duration: parseInt(document.getElementById('service-duration').value) || 30,
+      icon: document.getElementById('service-icon').value || '✂️',
+      description: document.getElementById('service-description').value,
+      active: true
+    };
+
+    await sb.from('services').insert([service]);
+    closeModal();
+    loadServices();
+    showToast('Xizmat qo\'shildi ✅', 'success');
+  } catch (e) {
+    showToast('Xatolik: ' + e.message, 'error');
+  }
+}
+
+async function editService(id) {
+  const { data: service } = await sb.from('services').select('*').eq('id', id).single();
+
+  openModal('Xizmatni tahrirlash', `
+    <div class="form-group">
+      <label class="form-label">Xizmat nomi *</label>
+      <input type="text" class="form-input" id="service-name" value="${service.name}">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Narx (so'm) *</label>
+        <input type="number" class="form-input" id="service-price" value="${service.price}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Davomiylik (daq)</label>
+        <input type="number" class="form-input" id="service-duration" value="${service.duration || 30}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Icon</label>
+      <input type="text" class="form-input" id="service-icon" value="${service.icon || '✂️'}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tavsif</label>
+      <textarea class="form-input" id="service-description">${service.description || ''}</textarea>
+    </div>
+  `, `
+    <button class="btn btn-secondary" onclick="closeModal()">Bekor</button>
+    <button class="btn btn-primary" onclick="updateService('${id}')">Saqlash</button>
+  `);
+}
+
+async function updateService(id) {
+  const name = document.getElementById('service-name').value.trim();
+  const price = parseInt(document.getElementById('service-price').value);
+
+  if (!name) return showToast('Iltimos, xizmat nomini kiriting!', 'error');
+  if (!price || price <= 0) return showToast('Iltimos, to\'g\'ri narx kiriting!', 'error');
+
+  try {
+    const service = {
+      name,
+      price,
+      duration: parseInt(document.getElementById('service-duration').value) || 30,
+      icon: document.getElementById('service-icon').value,
+      description: document.getElementById('service-description').value
+    };
+
+    await sb.from('services').update(service).eq('id', id);
+    closeModal();
+    loadServices();
+    showToast('Xizmat yangilandi ✅', 'success');
+  } catch (e) {
+    showToast('Xatolik: ' + e.message, 'error');
+  }
+}
+
+async function deleteService(id) {
+  if (confirm('Haqiqatan ham ushbu xizmatni o\'chirish?')) {
+    try {
+      await sb.from('services').delete().eq('id', id);
+      loadServices();
+      showToast('Xizmat o\'chirildi', 'success');
+    } catch (e) {
+      showToast('Xatolik: ' + e.message, 'error');
+    }
+  }
+}
+
+// ============ SETTINGS ============
+async function loadSettings() {
+  const { data: settings } = await sb.from('settings').select('*').eq('id', 1).single();
+
+  document.getElementById('shop_name').value = settings?.shop_name || '';
+  document.getElementById('address').value = settings?.address || '';
+  document.getElementById('phone').value = settings?.phone || '';
+  document.getElementById('rest_day').value = settings?.rest_day ?? 0;
+
+  loadAdmins();
+}
+
+async function loadAdmins() {
+  const { data: admins } = await sb.from('admins').select('*').order('created_at', { ascending: false });
+
+  const container = document.getElementById('admins-list');
+  if (!admins?.length) {
+    container.innerHTML = '<div style="padding:12px;color:var(--text3);text-align:center;font-size:12px">Adminlar yo\'q</div>';
+    return;
+  }
+
+  container.innerHTML = admins.map(a => `
+    <div class="settings-row">
+      <span class="settings-label">${a.telegram_id}</span>
+      <button class="btn btn-sm btn-danger" onclick="deleteAdmin('${a.telegram_id}')">🗑️</button>
+    </div>
+  `).join('');
+}
+
+function openAddAdmin() {
+  openModal('Yangi admin qo\'shish', `
+    <div class="form-group">
+      <label class="form-label">Telegram ID *</label>
+      <input type="text" class="form-input" id="admin-telegram-id" placeholder="123456789">
+    </div>
+    <p style="font-size:11px;color:var(--text3)">Foydalanuvchining Telegram ID raqamini kiriting</p>
+  `, `
+    <button class="btn btn-secondary" onclick="closeModal()">Bekor</button>
+    <button class="btn btn-primary" onclick="saveAdmin()">Qo\'shish</button>
+  `);
+}
+
+async function saveAdmin() {
+  const telegram_id = document.getElementById('admin-telegram-id').value.trim();
+  if (!telegram_id) return showToast('Iltimos, Telegram ID kiriting!', 'error');
+
+  try {
+    await sb.from('admins').insert([{ telegram_id, role: 'admin' }]);
+    closeModal();
+    loadAdmins();
+    showToast('Admin qo\'shildi ✅', 'success');
+  } catch (e) {
+    showToast('Xatolik: ' + e.message, 'error');
+  }
+}
+
+async function deleteAdmin(telegram_id) {
+  if (confirm('Haqiqatan ham ushbu adminni o\'chirish?')) {
+    try {
+      await sb.from('admins').delete().eq('telegram_id', telegram_id);
+      loadAdmins();
+      showToast('Admin o\'chirildi', 'success');
+    } catch (e) {
+      showToast('Xatolik: ' + e.message, 'error');
+    }
+  }
+}
+
+async function saveAllSettings() {
+  try {
+    const data = {
+      shop_name: document.getElementById('shop_name').value,
+      address: document.getElementById('address').value,
+      phone: document.getElementById('phone').value,
+      rest_day: parseInt(document.getElementById('rest_day').value)
+    };
+
+    await sb.from('settings').update(data).eq('id', 1);
+    showToast('Sozlamalar saqlandi ✅', 'success');
+  } catch (e) {
+    showToast('Xatolik: ' + e.message, 'error');
+  }
+}
+
+// ============ UTILS ============
+function openModal(title, body, footer) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-footer').innerHTML = footer;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+}
+
+function showToast(message, type = 'success') {
+  const toast = document.getElementById('toast');
+  const icon = document.getElementById('toast-icon');
+  const msg = document.getElementById('toast-message');
+
+  icon.textContent = type === 'success' ? '✅' : '❌';
+  msg.textContent = message;
+  toast.className = 'toast ' + type + ' show';
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3000);
+}
+
+async function refreshAll() {
+  if (currentTab === 'dashboard') loadDashboard();
+  if (currentTab === 'bookings') loadBookings();
+  if (currentTab === 'barbers') loadBarbers();
+  if (currentTab === 'services') loadServices();
+}
+
+// ============ REALTIME ============
+function subscribeToRealtime() {
+  sb.channel('admin-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+      if (currentTab === 'dashboard' || currentTab === 'bookings') {
+        refreshAll();
+      }
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'barbers' }, () => {
+      if (currentTab === 'dashboard' || currentTab === 'barbers') {
+        refreshAll();
+      }
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'services' }, () => {
+      if (currentTab === 'services') {
+        refreshAll();
+      }
+    })
+    .subscribe();
+}
+
+// Close modal on outside click
+document.getElementById('modal').addEventListener('click', (e) => {
+  if (e.target.id === 'modal') closeModal();
+});
+</script>
+</body>
+</html>
